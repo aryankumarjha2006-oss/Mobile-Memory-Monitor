@@ -1,0 +1,269 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res/auto"
+    android:id="@+id/llChartRoot"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="16dp"
+    android:background="#0F172A">
+
+    <!-- Header & Stream Status -->
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="12dp">
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:layout_alignParentStart="true"
+            android:layout_centerVertical="true">
+
+            <TextView
+                android:id="@+id/tvChartTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="MPAndroidChart Live Graph"
+                android:textColor="#F8FAFC"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/tvChartSubtitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Real-Time Memory Usage (30s Rolling Window)"
+                android:textColor="#94A3B8"
+                android:textSize="11sp" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/tvLiveStatusBadge"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentEnd="true"
+            android:layout_centerVertical="true"
+            android:background="@drawable/bg_marker_tooltip"
+            android:paddingStart="10dp"
+            android:paddingEnd="10dp"
+            android:paddingTop="4dp"
+            android:paddingBottom="4dp"
+            android:text="● LIVE 1s"
+            android:textColor="#10B981"
+            android:textSize="11sp"
+            android:textStyle="bold" />
+    </RelativeLayout>
+
+    <!-- Real-time Live Stats Pill Summary Row -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:weightSum="4"
+        android:layout_marginBottom="12dp">
+
+        <LinearLayout
+            android:id="@+id/statBoxCurrent"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:padding="6dp"
+            android:background="#1E293B">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="CURRENT"
+                android:textColor="#94A3B8"
+                android:textSize="9sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/tvCurrentMemory"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="0.00 GB"
+                android:textColor="#38BDF8"
+                android:textSize="13sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+
+        <Space
+            android:layout_width="4dp"
+            android:layout_height="wrap_content" />
+
+        <LinearLayout
+            android:id="@+id/statBoxPeak"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:padding="6dp"
+            android:background="#1E293B">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="PEAK (30s)"
+                android:textColor="#94A3B8"
+                android:textSize="9sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/tvPeakMemory"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="0.00 GB"
+                android:textColor="#F43F5E"
+                android:textSize="13sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+
+        <Space
+            android:layout_width="4dp"
+            android:layout_height="wrap_content" />
+
+        <LinearLayout
+            android:id="@+id/statBoxMin"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:padding="6dp"
+            android:background="#1E293B">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="MIN (30s)"
+                android:textColor="#94A3B8"
+                android:textSize="9sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/tvMinMemory"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="0.00 GB"
+                android:textColor="#10B981"
+                android:textSize="13sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+
+        <Space
+            android:layout_width="4dp"
+            android:layout_height="wrap_content" />
+
+        <LinearLayout
+            android:id="@+id/statBoxAvg"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:padding="6dp"
+            android:background="#1E293B">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="AVG (30s)"
+                android:textColor="#94A3B8"
+                android:textSize="9sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/tvAvgMemory"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="0.00 GB"
+                android:textColor="#F59E0B"
+                android:textSize="13sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- Main Chart -->
+    <com.github.mikephil.charting.charts.LineChart
+        android:id="@+id/lineChart"
+        android:layout_width="match_parent"
+        android:layout_height="250dp"
+        android:background="#1E293B"
+        android:layout_marginBottom="12dp" />
+
+    <!-- Extra Features Controls Bar -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:weightSum="4">
+
+        <Button
+            android:id="@+id/btnPauseResume"
+            android:layout_width="0dp"
+            android:layout_height="38dp"
+            android:layout_weight="1"
+            android:padding="0dp"
+            android:background="@drawable/bg_chart_button"
+            android:text="Pause Feed"
+            android:textColor="#38BDF8"
+            android:textSize="9sp"
+            android:textStyle="bold" />
+
+        <Space
+            android:layout_width="4dp"
+            android:layout_height="wrap_content" />
+
+        <Button
+            android:id="@+id/btnToggleCurve"
+            android:layout_width="0dp"
+            android:layout_height="38dp"
+            android:layout_weight="1"
+            android:padding="0dp"
+            android:background="@drawable/bg_chart_button"
+            android:text="Smooth/Step"
+            android:textColor="#10B981"
+            android:textSize="9sp"
+            android:textStyle="bold" />
+
+        <Space
+            android:layout_width="4dp"
+            android:layout_height="wrap_content" />
+
+        <Button
+            android:id="@+id/btnToggleTheme"
+            android:layout_width="0dp"
+            android:layout_height="38dp"
+            android:layout_weight="1"
+            android:padding="0dp"
+            android:background="@drawable/bg_chart_button"
+            android:text="Theme: Cyber"
+            android:textColor="#A855F7"
+            android:textSize="9sp"
+            android:textStyle="bold" />
+
+        <Space
+            android:layout_width="4dp"
+            android:layout_height="wrap_content" />
+
+        <Button
+            android:id="@+id/btnResetData"
+            android:layout_width="0dp"
+            android:layout_height="38dp"
+            android:layout_weight="1"
+            android:padding="0dp"
+            android:background="@drawable/bg_chart_button"
+            android:text="Reset Buffer"
+            android:textColor="#F43F5E"
+            android:textSize="9sp"
+            android:textStyle="bold" />
+    </LinearLayout>
+
+</LinearLayout>

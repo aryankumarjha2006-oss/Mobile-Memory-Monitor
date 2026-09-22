@@ -1,0 +1,6 @@
+{
+  "name": "Mobile Memory Monitor",
+  "description": "Real-time mobile RAM, storage, and performance monitoring app with live usage graphs, app analyzer, and memory optimization.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

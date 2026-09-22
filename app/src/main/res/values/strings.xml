@@ -1,0 +1,17 @@
+<resources>
+    <string name="app_name">Mobile Memory Monitor</string>
+    <string name="nav_dashboard">Dashboard</string>
+    <string name="nav_monitor">Monitor</string>
+    <string name="nav_apps">Apps</string>
+    <string name="nav_history">History</string>
+    <string name="nav_storage">Storage</string>
+    <string name="nav_optimization">Optimize</string>
+    <string name="nav_settings">Settings</string>
+
+    <string name="ram_status_normal">RAM Normal</string>
+    <string name="ram_status_warning">RAM Warning (>80%)</string>
+    <string name="ram_status_critical">RAM Critical (>90%)</string>
+
+    <string name="high_ram_notification_title">High Memory Warning</string>
+    <string name="high_ram_notification_body">Memory usage is at %1$d%%! Tap to optimize your device memory.</string>
+</resources>

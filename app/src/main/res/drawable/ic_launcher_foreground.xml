@@ -1,0 +1,20 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- RAM Chip Outline & Gauge -->
+    <path
+        android:fillColor="#38BDF8"
+        android:pathData="M34,34 h40 v40 h-40 z M38,38 v32 h32 v-32 z" />
+    <path
+        android:fillColor="#818CF8"
+        android:pathData="M42,42 h24 v24 h-24 z" />
+    <!-- Chip Pins Top/Bottom/Sides -->
+    <path
+        android:fillColor="#38BDF8"
+        android:pathData="M40,28 h4 v6 h-4 z M52,28 h4 v6 h-4 z M64,28 h4 v6 h-4 z
+                          M40,74 h4 v6 h-4 z M52,74 h4 v6 h-4 z M64,74 h4 v6 h-4 z
+                          M28,40 h6 v4 h-6 z M28,52 h6 v4 h-6 z M28,64 h6 v4 h-6 z
+                          M74,40 h6 v4 h-6 z M74,52 h6 v4 h-6 z M74,64 h6 v4 h-6 z" />
+</vector>

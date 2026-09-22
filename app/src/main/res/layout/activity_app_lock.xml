@@ -1,0 +1,231 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:gravity="center_horizontal"
+    android:background="#0F172A"
+    android:padding="24dp">
+
+    <!-- Top Spacer -->
+    <Space
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1" />
+
+    <!-- Lock Icon Banner -->
+    <ImageView
+        android:id="@+id/ivLockIcon"
+        android:layout_width="72dp"
+        android:layout_height="72dp"
+        android:src="@android:drawable/ic_lock_lock"
+        android:contentDescription="App Lock Shield"
+        android:layout_marginBottom="16dp"
+        android:tint="#38BDF8" />
+
+    <!-- Screen Title -->
+    <TextView
+        android:id="@+id/tvAppLockTitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Enter Your 4-Digit PIN"
+        android:textColor="#F8FAFC"
+        android:textSize="22sp"
+        android:textStyle="bold"
+        android:gravity="center"
+        android:layout_marginBottom="6dp" />
+
+    <!-- Screen Subtitle / Instructions -->
+    <TextView
+        android:id="@+id/tvAppLockSubtitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Access Memory Monitor application"
+        android:textColor="#94A3B8"
+        android:textSize="13sp"
+        android:gravity="center"
+        android:layout_marginBottom="24dp" />
+
+    <!-- PIN Indicator 4 Dots Row -->
+    <LinearLayout
+        android:id="@+id/llPinDots"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:layout_marginBottom="16dp">
+
+        <View
+            android:id="@+id/vDot1"
+            android:layout_width="18dp"
+            android:layout_height="18dp"
+            android:background="@drawable/bg_pin_dot_off"
+            android:layout_margin="8dp" />
+
+        <View
+            android:id="@+id/vDot2"
+            android:layout_width="18dp"
+            android:layout_height="18dp"
+            android:background="@drawable/bg_pin_dot_off"
+            android:layout_margin="8dp" />
+
+        <View
+            android:id="@+id/vDot3"
+            android:layout_width="18dp"
+            android:layout_height="18dp"
+            android:background="@drawable/bg_pin_dot_off"
+            android:layout_margin="8dp" />
+
+        <View
+            android:id="@+id/vDot4"
+            android:layout_width="18dp"
+            android:layout_height="18dp"
+            android:background="@drawable/bg_pin_dot_off"
+            android:layout_margin="8dp" />
+    </LinearLayout>
+
+    <!-- Error / Info Status Feedback Label -->
+    <TextView
+        android:id="@+id/tvPinError"
+        android:layout_width="wrap_content"
+        android:layout_height="24dp"
+        android:text=""
+        android:textColor="#F43F5E"
+        android:textSize="13sp"
+        android:textStyle="bold"
+        android:gravity="center"
+        android:layout_marginBottom="16dp" />
+
+    <Space
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="0.5" />
+
+    <!-- Keypad 3x4 Grid Layout -->
+    <GridLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:columnCount="3"
+        android:rowCount="4"
+        android:alignmentMode="alignMargins"
+        android:useDefaultMargins="true"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginBottom="24dp">
+
+        <!-- Row 1: 1, 2, 3 -->
+        <TextView
+            android:id="@+id/btnKey1"
+            style="@style/KeypadButtonStyle"
+            android:text="1" />
+
+        <TextView
+            android:id="@+id/btnKey2"
+            style="@style/KeypadButtonStyle"
+            android:text="2" />
+
+        <TextView
+            android:id="@+id/btnKey3"
+            style="@style/KeypadButtonStyle"
+            android:text="3" />
+
+        <!-- Row 2: 4, 5, 6 -->
+        <TextView
+            android:id="@+id/btnKey4"
+            style="@style/KeypadButtonStyle"
+            android:text="4" />
+
+        <TextView
+            android:id="@+id/btnKey5"
+            style="@style/KeypadButtonStyle"
+            android:text="5" />
+
+        <TextView
+            android:id="@+id/btnKey6"
+            style="@style/KeypadButtonStyle"
+            android:text="6" />
+
+        <!-- Row 3: 7, 8, 9 -->
+        <TextView
+            android:id="@+id/btnKey7"
+            style="@style/KeypadButtonStyle"
+            android:text="7" />
+
+        <TextView
+            android:id="@+id/btnKey8"
+            style="@style/KeypadButtonStyle"
+            android:text="8" />
+
+        <TextView
+            android:id="@+id/btnKey9"
+            style="@style/KeypadButtonStyle"
+            android:text="9" />
+
+        <!-- Row 4: Clear, 0, Backspace -->
+        <TextView
+            android:id="@+id/btnKeyClear"
+            style="@style/KeypadButtonStyle"
+            android:text="C"
+            android:textColor="#F43F5E"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/btnKey0"
+            style="@style/KeypadButtonStyle"
+            android:text="0" />
+
+        <TextView
+            android:id="@+id/btnKeyDelete"
+            style="@style/KeypadButtonStyle"
+            android:text="⌫"
+            android:textColor="#94A3B8"
+            android:textSize="20sp" />
+    </GridLayout>
+
+    <!-- Biometric Fingerprint Quick Action Button -->
+    <LinearLayout
+        android:id="@+id/btnBiometricUnlock"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp"
+        android:paddingTop="8dp"
+        android:paddingBottom="8dp"
+        android:background="@drawable/bg_chart_button"
+        android:clickable="true"
+        android:focusable="true"
+        android:visibility="gone"
+        android:layout_marginBottom="16dp">
+
+        <ImageView
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:src="@android:drawable/ic_lock_power_off"
+            android:contentDescription="Fingerprint Sensor"
+            android:tint="#38BDF8" />
+
+        <TextView
+            android:id="@+id/tvBiometricBtnText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text=" Unlock with Fingerprint"
+            android:textColor="#38BDF8"
+            android:textSize="13sp"
+            android:textStyle="bold"
+            android:layout_marginStart="6dp" />
+    </LinearLayout>
+
+    <!-- Bottom Security Note -->
+    <TextView
+        android:id="@+id/tvSecurityNote"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="🔒 Secured with EncryptedSharedPreferences"
+        android:textColor="#64748B"
+        android:textSize="11sp"
+        android:gravity="center" />
+
+</LinearLayout>
