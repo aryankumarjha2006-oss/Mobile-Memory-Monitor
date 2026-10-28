@@ -7,7 +7,8 @@ import androidx.room.Query
 import kotlinx.coroutines.flow.Flow
 
 /**
- * Data Access Object for managing memory usage history records in SQLite.
+ * Data Access Object for managing memory usage history records and
+ * 60% RAM threshold trigger events in SQLite.
  */
 @Dao
 interface MemoryDao {
@@ -29,4 +30,14 @@ interface MemoryDao {
 
     @Query("DELETE FROM memory_history WHERE timestamp < :cutoffTimestamp")
     suspend fun deleteOlderThan(cutoffTimestamp: Long): Int
+
+    // RAM Threshold Trigger Events
+    @Query("SELECT * FROM ram_trigger_events ORDER BY timestamp DESC LIMIT 50")
+    fun getRecentTriggerEvents(): Flow<List<RamTriggerEntity>>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertTriggerEvent(event: RamTriggerEntity)
+
+    @Query("DELETE FROM ram_trigger_events")
+    suspend fun clearTriggerEvents(): Int
 }

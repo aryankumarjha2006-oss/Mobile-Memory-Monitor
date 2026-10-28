@@ -113,6 +113,9 @@ fun MainAppScreen(viewModel: MemoryViewModel, isRooted: Boolean = false) {
     val storageScanState by viewModel.storageScanState.collectAsStateWithLifecycle()
     val lastScanTimestamp by viewModel.lastScanTimestamp.collectAsStateWithLifecycle()
 
+    val isRamMonitorRunning by viewModel.isRamMonitorServiceRunning.collectAsStateWithLifecycle()
+    val latestTriggerEvent by viewModel.latestTriggerEvent.collectAsStateWithLifecycle()
+
     val filteredApps by viewModel.filteredApps.collectAsStateWithLifecycle()
     val isLoadingApps by viewModel.isLoadingApps.collectAsStateWithLifecycle()
     val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
@@ -218,6 +221,9 @@ fun MainAppScreen(viewModel: MemoryViewModel, isRooted: Boolean = false) {
                         isBoosting = isBoosting,
                         lastFreedMb = lastFreedMb,
                         isRooted = isRooted,
+                        isRamMonitorRunning = isRamMonitorRunning,
+                        latestTriggerEvent = latestTriggerEvent,
+                        onToggleRamMonitor = { enable -> viewModel.toggleRamMonitorService(enable) },
                         onOptimizeClick = { viewModel.optimizeMemory() },
                         onScanStorage = { viewModel.scanAndRefreshStorage() },
                         onStartLiveMonitoring = {

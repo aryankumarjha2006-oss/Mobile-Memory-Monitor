@@ -1,5 +1,13 @@
 package com.example.ui.screens
 
+import android.Manifest
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.net.Uri
+import android.os.Build
+import android.provider.Settings
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
@@ -25,6 +33,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.Analytics
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.BatteryChargingFull
@@ -34,11 +43,15 @@ import androidx.compose.material.icons.filled.DeveloperBoard
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.Memory
+import androidx.compose.material.icons.filled.NotificationsActive
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.SdCard
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Speed
+import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material.icons.filled.Thermostat
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -48,6 +61,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -67,20 +81,22 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import com.example.data.db.RamTriggerEntity
 import com.example.data.model.BatterySnapshot
 import com.example.data.model.BatteryStats
 import com.example.data.model.CpuSample
 import com.example.data.model.CpuSnapshot
-import com.example.data.model.CpuSource
 import com.example.data.model.CpuStats
 import com.example.data.model.LiveMemoryPoint
 import com.example.data.model.MemoryStats
@@ -117,6 +133,9 @@ fun DashboardScreen(
     isBoosting: Boolean,
     lastFreedMb: Long?,
     isRooted: Boolean = false,
+    isRamMonitorRunning: Boolean = false,
+    latestTriggerEvent: RamTriggerEntity? = null,
+    onToggleRamMonitor: (Boolean) -> Unit = {},
     onOptimizeClick: () -> Unit,
     onScanStorage: () -> Unit = {},
     onStartLiveMonitoring: () -> Unit = {},
@@ -125,6 +144,8 @@ fun DashboardScreen(
     onOpenLargeFiles: () -> Unit = {}
 ) {
     val scrollState = rememberScrollState()
+    val context = LocalContext.current
+    val timeFormat = remember { SimpleDateFormat("hh:mm:ss a", Locale.getDefault()) }
 
     val lifecycleOwner = LocalLifecycleOwner.current
     DisposableEffect(lifecycleOwner) {
@@ -139,6 +160,25 @@ fun DashboardScreen(
         onDispose {
             lifecycleOwner.lifecycle.removeObserver(observer)
             onStopLiveMonitoring()
+        }
+    }
+
+    var hasNotificationPermission by remember {
+        mutableStateOf(
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
+            } else {
+                true
+            }
+        )
+    }
+
+    val notificationPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        hasNotificationPermission = isGranted
+        if (isGranted) {
+            onToggleRamMonitor(true)
         }
     }
 
@@ -361,6 +401,241 @@ fun DashboardScreen(
             }
         }
 
+        // ================= SMART RAM MONITOR (60% THRESHOLD ALERT) CARD =================
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+        ) {
+            Column(modifier = Modifier.padding(18.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Default.NotificationsActive,
+                            contentDescription = "Smart RAM Monitor",
+                            tint = ElectricCyan,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "Smart RAM Monitor",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+
+                    val (statusLabel, statusColor) = when {
+                        !hasNotificationPermission -> "Permission Required" to AccentAmber
+                        isRamMonitorRunning -> "Monitoring" to AccentEmerald
+                        else -> "Stopped" to MaterialTheme.colorScheme.onSurfaceVariant
+                    }
+
+                    Surface(
+                        shape = RoundedCornerShape(8.dp),
+                        color = statusColor.copy(alpha = 0.15f)
+                    ) {
+                        Text(
+                            text = statusLabel,
+                            color = statusColor,
+                            fontWeight = FontWeight.Bold,
+                            style = MaterialTheme.typography.labelMedium,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // RAM Telemetry Summary Row
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column {
+                        Text(
+                            text = "Current: ${memoryStats.usedPercent}% (Threshold: 60%)",
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = if (memoryStats.usedPercent >= 60) AccentRose else MaterialTheme.colorScheme.onSurface
+                        )
+                        Text(
+                            text = "Used: ${MemoryFormatter.formatMb(memoryStats.usedRamMb)} • Free: ${MemoryFormatter.formatMb(memoryStats.freeRamMb)}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                LinearProgressIndicator(
+                    progress = { (memoryStats.usedPercent / 100f).coerceIn(0f, 1f) },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(8.dp)
+                        .clip(RoundedCornerShape(4.dp)),
+                    color = if (memoryStats.usedPercent >= 60) AccentRose else ElectricCyan,
+                    trackColor = MaterialTheme.colorScheme.surfaceVariant
+                )
+
+                Spacer(modifier = Modifier.height(14.dp))
+
+                // MANDATORY RESULT CARD — Display Candidate App & Action Outcome
+                if (latestTriggerEvent != null) {
+                    val event = latestTriggerEvent
+                    val (badgeText, badgeColor) = when (event.outcomeName) {
+                        "FORCE_STOP_CONFIRMED" -> "Force-stop confirmed" to AccentEmerald
+                        "MANUAL_FORCE_STOP_REQUIRED" -> "Manual force-stop required" to AccentAmber
+                        else -> "Unable to stop app" to AccentRose
+                    }
+
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, badgeColor.copy(alpha = 0.4f))
+                    ) {
+                        Column(modifier = Modifier.padding(14.dp)) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = "Candidate App Result",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+
+                                Surface(
+                                    shape = RoundedCornerShape(6.dp),
+                                    color = badgeColor.copy(alpha = 0.18f)
+                                ) {
+                                    Text(
+                                        text = badgeText,
+                                        style = MaterialTheme.typography.labelSmall,
+                                        fontWeight = FontWeight.Bold,
+                                        color = badgeColor,
+                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                    )
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(8.dp))
+
+                            Text(
+                                text = "${event.appName} (${event.packageName})",
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = ElectricCyan,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+
+                            Spacer(modifier = Modifier.height(4.dp))
+
+                            Text(
+                                text = "RAM at Trigger: ${event.usedPercent}% (Threshold: ${event.thresholdPercent}%) • ${timeFormat.format(Date(event.timestamp))}",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+
+                            Spacer(modifier = Modifier.height(6.dp))
+
+                            Text(
+                                text = event.message,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+
+                            if (event.outcomeName == "MANUAL_FORCE_STOP_REQUIRED" && event.packageName.isNotEmpty() && !event.packageName.startsWith("system.")) {
+                                Spacer(modifier = Modifier.height(10.dp))
+                                Button(
+                                    onClick = {
+                                        try {
+                                            val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                                                data = Uri.parse("package:${event.packageName}")
+                                                flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                                            }
+                                            context.startActivity(intent)
+                                        } catch (_: Exception) {}
+                                    },
+                                    colors = ButtonDefaults.buttonColors(containerColor = ElectricCyan),
+                                    shape = RoundedCornerShape(8.dp),
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.AutoMirrored.Filled.OpenInNew,
+                                        contentDescription = "Open App Info",
+                                        tint = Color.Black,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text("Open App Info", color = Color.Black, fontWeight = FontWeight.Bold)
+                                }
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(14.dp))
+                }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    OutlinedButton(
+                        onClick = { onNavigateTab(3) }, // Opens App Manager
+                        shape = RoundedCornerShape(10.dp),
+                        modifier = Modifier.sizeIn(minHeight = 48.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.GridView,
+                            contentDescription = "Manage Apps",
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text("Manage Apps")
+                    }
+
+                    Button(
+                        onClick = {
+                            if (!hasNotificationPermission && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                                notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                            } else {
+                                onToggleRamMonitor(!isRamMonitorRunning)
+                            }
+                        },
+                        shape = RoundedCornerShape(10.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = if (isRamMonitorRunning) AccentRose else ElectricCyan
+                        ),
+                        modifier = Modifier.sizeIn(minHeight = 48.dp)
+                    ) {
+                        Icon(
+                            imageVector = if (isRamMonitorRunning) Icons.Default.Stop else Icons.Default.PlayArrow,
+                            contentDescription = if (isRamMonitorRunning) "Stop Monitoring" else "Start Monitoring",
+                            tint = Color.Black,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = if (isRamMonitorRunning) "Stop Monitoring" else "Start 60% Monitor",
+                            color = Color.Black,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+            }
+        }
+
         // ================= CPU MONITOR CARD =================
         Card(
             modifier = Modifier.fillMaxWidth(),
@@ -418,7 +693,7 @@ fun DashboardScreen(
                     val cpuUsageVal = if (cpuSnapshot.isAvailable && cpuSnapshot.totalUsagePercent >= 0) cpuSnapshot.totalUsagePercent else 0
                     GaugeArc(
                         percentage = cpuUsageVal,
-                        label = if (cpuSnapshot.cpuSource == CpuSource.APP) "App Load" else "CPU Load",
+                        label = if (cpuSnapshot.cpuSource == com.example.data.model.CpuSource.APP) "App Load" else "CPU Load",
                         size = 110.dp,
                         accentColor = ElectricCyan
                     )
@@ -455,7 +730,7 @@ fun DashboardScreen(
 
                         Spacer(modifier = Modifier.height(6.dp))
 
-                        if (cpuSnapshot.cpuSource == CpuSource.APP) {
+                        if (cpuSnapshot.cpuSource == com.example.data.model.CpuSource.APP) {
                             Text(
                                 text = "System CPU access is restricted on this device. Showing real process CPU usage for this app.",
                                 style = MaterialTheme.typography.labelSmall,
@@ -469,7 +744,7 @@ fun DashboardScreen(
 
                 // Live CPU Curve
                 Text(
-                    text = if (cpuSnapshot.cpuSource == CpuSource.APP) "Live App CPU Usage Curve" else "Live CPU Usage Curve",
+                    text = if (cpuSnapshot.cpuSource == com.example.data.model.CpuSource.APP) "Live App CPU Usage Curve" else "Live CPU Usage Curve",
                     style = MaterialTheme.typography.labelMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface

@@ -6,7 +6,9 @@ import android.util.Log
 import androidx.core.content.edit
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.data.db.AppDatabase
 import com.example.data.db.MemoryRecord
+import com.example.data.db.RamTriggerEntity
 import com.example.data.model.AppInfo
 import com.example.data.model.AppSortOption
 import com.example.data.model.BatterySnapshot
@@ -29,6 +31,7 @@ import com.example.data.model.StorageStats
 import com.example.data.model.SystemMonitorState
 import com.example.data.repository.ClearHistoryResult
 import com.example.data.repository.MemoryRepository
+import com.example.service.RamMonitorService
 import com.example.util.NotificationHelper
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -38,6 +41,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
@@ -45,11 +49,14 @@ import kotlinx.coroutines.withContext
 
 /**
  * Main ViewModel driving real-time telemetry, storage breakdown,
- * Smart Cleanup, Per-App Cache Management, Large Files analysis, and App Management.
+ * Smart Cleanup, Per-App Cache Management, Large Files analysis,
+ * Background RAM Monitoring Service (60% threshold), and App Management.
  */
 class MemoryViewModel(application: Application) : AndroidViewModel(application) {
 
     private val repository = MemoryRepository(application.applicationContext)
+    private val db = AppDatabase.getInstance(application.applicationContext)
+    private val memoryDao = db.memoryDao()
     private val prefs = application.getSharedPreferences("memory_manager_settings", Context.MODE_PRIVATE)
 
     private val _memoryStats = MutableStateFlow(MemoryStats())
@@ -107,6 +114,20 @@ class MemoryViewModel(application: Application) : AndroidViewModel(application) 
 
     private val _appSortOption = MutableStateFlow(AppSortOption.LARGEST)
     val appSortOption: StateFlow<AppSortOption> = _appSortOption.asStateFlow()
+
+    // Background RAM Monitor Service State
+    private val _isRamMonitorServiceRunning = MutableStateFlow(
+        prefs.getBoolean("key_ram_monitor_service_enabled", false)
+    )
+    val isRamMonitorServiceRunning: StateFlow<Boolean> = _isRamMonitorServiceRunning.asStateFlow()
+
+    // RAM Trigger Events (60% Threshold Crossings)
+    val recentRamTriggerEvents: StateFlow<List<RamTriggerEntity>> = memoryDao.getRecentTriggerEvents()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val latestTriggerEvent: StateFlow<RamTriggerEntity?> = recentRamTriggerEvents
+        .map { it.firstOrNull() }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
     // Per-App Cache Manager States
     private val _selectedAppCachePackages = MutableStateFlow<Set<String>>(emptySet())
@@ -262,11 +283,20 @@ class MemoryViewModel(application: Application) : AndroidViewModel(application) 
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    // Persisted Settings States
     private val _isDarkMode = MutableStateFlow(prefs.getBoolean("key_dark_mode", true))
     val isDarkMode: StateFlow<Boolean> = _isDarkMode.asStateFlow()
 
-    private val _alertThresholdPercent = MutableStateFlow(prefs.getInt("key_alert_threshold", 90))
+    private val _alertThresholdPercent = MutableStateFlow(
+        let {
+            val saved = prefs.getInt("key_alert_threshold", 60)
+            if (saved == 80) {
+                prefs.edit { putInt("key_alert_threshold", 60) }
+                60
+            } else {
+                saved
+            }
+        }
+    )
     val alertThresholdPercent: StateFlow<Int> = _alertThresholdPercent.asStateFlow()
 
     private val _isNotificationsEnabled = MutableStateFlow(prefs.getBoolean("key_notifications_enabled", true))
@@ -278,13 +308,26 @@ class MemoryViewModel(application: Application) : AndroidViewModel(application) 
     private val _lastFreedMb = MutableStateFlow<Long?>(null)
     val lastFreedMb: StateFlow<Long?> = _lastFreedMb.asStateFlow()
 
-    private var lastNotificationTime = 0L
-
     init {
         startRealtimeMonitoring()
         loadInstalledApps()
         scanCleanableItems()
         loadLargeFiles()
+
+        // Auto-start RamMonitorService if enabled in preferences
+        if (_isRamMonitorServiceRunning.value) {
+            RamMonitorService.startService(getApplication())
+        }
+    }
+
+    fun toggleRamMonitorService(enable: Boolean) {
+        _isRamMonitorServiceRunning.value = enable
+        prefs.edit { putBoolean("key_ram_monitor_service_enabled", enable) }
+        if (enable) {
+            RamMonitorService.startService(getApplication())
+        } else {
+            RamMonitorService.stopService(getApplication())
+        }
     }
 
     private fun startRealtimeMonitoring() {
@@ -304,17 +347,6 @@ class MemoryViewModel(application: Application) : AndroidViewModel(application) 
                 _cpuStats.value = cpu
                 _cpuSnapshot.value = cpuSnap
                 _batterySnapshot.value = batterySnap
-
-                if (_isNotificationsEnabled.value && memStats.usedPercent >= _alertThresholdPercent.value) {
-                    val currentTime = System.currentTimeMillis()
-                    if (currentTime - lastNotificationTime > 120_000) {
-                        lastNotificationTime = currentTime
-                        NotificationHelper.sendHighRamAlert(
-                            getApplication<Application>().applicationContext,
-                            memStats.usedPercent
-                        )
-                    }
-                }
 
                 // Record history snapshot every 5 minutes (300 ticks) or on initial startup
                 if (tickCount == 0 || tickCount % 300 == 0) {

@@ -6,9 +6,10 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 
 /**
- * Main Room Database singleton instance for storing memory monitor history logs.
+ * Main Room Database singleton instance for storing memory monitor history logs
+ * and 60% threshold trigger events.
  */
-@Database(entities = [MemoryRecord::class], version = 1, exportSchema = false)
+@Database(entities = [MemoryRecord::class, RamTriggerEntity::class], version = 2, exportSchema = false)
 abstract class AppDatabase : RoomDatabase() {
 
     abstract fun memoryDao(): MemoryDao
